@@ -1,0 +1,95 @@
+set nu
+set autoindent
+set smartindent
+set ruler
+set showcmd
+set incsearch
+set hlsearch
+set confirm
+set tabstop=4
+set shiftwidth=4
+set ignorecase 
+syntax on
+colo jellybeans
+nmap <C-C> :cd %:p:h<CR>
+nmap <C-\> 0i//<Esc>
+
+
+
+"---winmanager---
+nmap wm :WMToggle<CR>
+"let g:winManagerWindowLayout = "FileExplorer,TagsExplorer|BufExplorer|Taglist"
+let g:winManagerWindowLayout = "FileExplorer"
+
+
+"---TagList---
+let Tlist_Auto_Open = 0
+let Tlist_WinWidth = 40
+let Tlist_Exit_OnlyWindow = 1
+let Tlist_Use_Right_Window = 1
+let Tlist_Show_One_File = 1
+let Tlist_Show_Menu = 1
+nmap tl :Tlist<CR>
+
+
+
+"---cscope---
+if has("cscope")
+   set cst
+   set csto=1
+   set csre
+   set nocsverb
+   " add any database in current directory
+   if filereadable("cscope.out")
+       cs add cscope.out
+   " else add database pointed to by environment
+   elseif $CSCOPE_DB != ""
+       cs add $CSCOPE_DB
+   endif
+   set csverb
+endif
+"ctags -R --c++-kinds=+p --fields=+iaS --extra=+q
+"0 or s: Find this C symbol
+"1 or g: Find this definition
+"2 or d: Find functions called by this function
+"3 or c: Find functions calling this function
+"4 or t: Find this text string
+"6 or e: Find this egrep pattern
+"7 or f: Find this file
+"8 or i: Find files #including this file
+
+nmap fs :cs find s <C-R>=expand("<cword>")<CR><CR>
+nmap fg :cs find g <C-R>=expand("<cword>")<CR><CR>
+nmap fc :cs find c <C-R>=expand("<cword>")<CR><CR>
+nmap ft :cs find t <C-R>=expand("<cword>")<CR><CR>
+nmap fe :cs find e <C-R>=expand("<cword>")<CR><CR>
+nmap ff :cs find f <C-R>=expand("<cfile>")<CR><CR>
+nmap fi :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
+nmap fd :cs find d <C-R>=expand("<cword>")<CR><CR>
+
+"---Airline---
+let g:airline_theme='papercolor'
+
+
+
+"---Tagbar---
+nmap tb :TagbarToggle<CR>
+nmap tj :TagbarOpen fj<CR>
+let g:tagbar_autofocus=1
+let g:tagbar_show_visibility = 1
+let g:tagbar_show_linenumbers = 1
+let g:tagbar_autoshowtag = 1
+let g:tagbar_autopreview = 1
+
+
+
+"---LookupFile---
+let g:LookupFile_TagExpr = string('./lktags')
+"(echo '!_TAG_FILE_SORTED	2	/2=foldcase/';(find . -type f -printf "%f\t%p\t1\n" | sort -f)) > ./lktags
+let LookupFile_PreserveLastPattern = 0
+
+
+
+"---unite---
+nmap <F4> :Unite -start-insert file_rec<CR>
+call unite#filters#matcher_default#use(['matcher_regexp'])
