@@ -9,6 +9,7 @@ set confirm
 set tabstop=4
 set shiftwidth=4
 set ignorecase 
+set mouse=n
 syntax on
 colo jellybeans
 nmap <C-C> :cd %:p:h<CR>
@@ -69,7 +70,7 @@ nmap fd :cs find d <C-R>=expand("<cword>")<CR><CR>
 
 "---Airline---
 let g:airline_theme='papercolor'
-
+set laststatus=2
 
 
 "---Tagbar---
@@ -93,3 +94,44 @@ let LookupFile_PreserveLastPattern = 0
 "---unite---
 nmap <F4> :Unite -start-insert file_rec<CR>
 call unite#filters#matcher_default#use(['matcher_regexp'])
+
+"---tab----
+function! MyTabLabel(n)
+  let buflist = tabpagebuflist(a:n)
+  let winnr = tabpagewinnr(a:n)
+  return fnamemodify(bufname(buflist[winnr - 1]), ":t")
+endfunction
+function! MyTabLine()
+  let s = ''
+  for i in range(tabpagenr('$'))
+    " select the highlighting
+    if i + 1 == tabpagenr()
+      let s .= '%#TabLineSel#'
+    else
+      let s .= '%#TabLine#'
+    endif
+
+    " set the tab page number (for mouse clicks)
+    let s .= '%' . (i + 1) . 'T'
+
+    " the label is made by MyTabLabel()
+    let s .= ' %{MyTabLabel(' . (i + 1) . ')} '
+  endfor
+
+  " after the last tab fill with TabLineFill and reset tab page nr
+  let s .= '%#TabLineFill#%T'
+
+  " right-align the label to close the current tab page
+  if tabpagenr('$') > 1
+    let s .= '%=%#TabLine#%999Xclose'
+  endif
+
+  return s
+endfunction
+set showtabline=2
+set tabline=%!MyTabLine()
+nmap <tab> :tabnext<CR>
+nmap <S-tab> :tabprevious<CR>
+nmap tn :tabnew <C-R>=expand('%:h')<CR><CR>
+nmap tc :tabnew <C-R>=expand('%:p')<CR><CR>
+nmap tw :tabclose<CR>
