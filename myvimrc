@@ -1,22 +1,29 @@
 set nu
-set autoindent
-set smartindent
-set ruler
-set showcmd
-set incsearch
-set hlsearch
-set confirm
-set tabstop=4
-set shiftwidth=4
-set ignorecase 
-set smartcase
-set mouse=n
-set cindent
-set linebreak
 syntax on
-colo jellybeans
+
+"set list
+"set lcs=tab:>-,eol:<,nbsp:%,trail:-
+
+set autoindent
+set nosmartindent
+set cindent
+set nosmarttab
+set expandtab
+set shiftwidth=4
+set tabstop=4
+set softtabstop=4
+
 filetype on
 filetype plugin on
+set ignorecase
+set smartcase
+set showmatch
+set linebreak
+set ruler
+set incsearch
+set hlsearch
+colorscheme jellybeans
+"colorscheme default 
 autocmd InsertLeave * se nocul
 autocmd InsertEnter * se cul
 set guifont="Courier 10 pitch:h10:cANSI"
@@ -27,133 +34,30 @@ set confirm
 "set cmdheight=2
 let &titlestring = expand("%:p")
 set notitle
+set mouse=n
+set showtabline=2
+set tabpagemax=20
+
+"------indentLine-------------
+let g:indentLine_char='│'
+let g:indentLine_color_term=235
+let g:indentLine_concealcursor=''
 
 nmap <C-C> :cd <C-R>=expand("%:p:h")<CR><CR> 
 
 "---Window---
 let s:fullsize = 0
 function! ToggleFullScreen()
-	let s:fullsize = winheight(0) < 5 ? 0 : 1
-	if s:fullsize == 0
-		exe "res"
-	else
-		exe "res 2"
+    let s:fullsize = winheight(0) < 5 ? 0 : 1
+    if s:fullsize == 0
+        exe "res"
+    else
+        exe "res 2"
     endif
 endfunc
 nmap <F11> :call ToggleFullScreen()<CR>
 nmap <F12> <C-W>=
 
-"---winmanager---
-nmap wm :WMToggle<CR>
-"let g:winManagerWindowLayout = "FileExplorer,TagsExplorer|BufExplorer|Taglist"
-let g:winManagerWindowLayout = "FileExplorer"
-
-
-"---TagList---
-let Tlist_Auto_Open = 0
-let Tlist_WinWidth = 40
-let Tlist_Exit_OnlyWindow = 1
-let Tlist_Use_Right_Window = 1
-let Tlist_Show_One_File = 1
-let Tlist_Show_Menu = 1
-nmap tl :Tlist<CR>
-
-
-
-"---cscope---
-if has("cscope")
-   set cst
-   set csto=1
-   set csre
-   set nocsverb
-   " add any database in current directory
-   if filereadable("cscope.out")
-       cs add cscope.out
-   " else add database pointed to by environment
-   elseif $CSCOPE_DB != ""
-       cs add $CSCOPE_DB
-   endif
-   set csverb
-endif
-"ctags -R --c++-kinds=+p --fields=+iaS --extra=+q
-"0 or s: Find this C symbol
-"1 or g: Find this definition
-"2 or d: Find functions called by this function
-"3 or c: Find functions calling this function
-"4 or t: Find this text string
-"6 or e: Find this egrep pattern
-"7 or f: Find this file
-"8 or i: Find files #including this file
-
-nmap fs :cs find s <C-R>=expand("<cword>")<CR><CR>
-nmap fg :cs find g <C-R>=expand("<cword>")<CR><CR>
-nmap fc :cs find c <C-R>=expand("<cword>")<CR><CR>
-nmap ft :cs find t <C-R>=expand("<cword>")<CR><CR>
-nmap fe :cs find e <C-R>=expand("<cword>")<CR><CR>
-nmap ff :cs find f <C-R>=expand("<cfile>")<CR><CR>
-nmap fi :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
-nmap fd :cs find d <C-R>=expand("<cword>")<CR><CR>
-
-"---Airline---
-let g:airline_theme='papercolor'
-set laststatus=2
-
-
-"---Tagbar---
-nmap tb :TagbarToggle<CR>
-nmap tj :TagbarOpen fj<CR>
-let g:tagbar_autofocus=1
-let g:tagbar_show_visibility = 1
-let g:tagbar_show_linenumbers = 1
-let g:tagbar_autoshowtag = 1
-let g:tagbar_autopreview = 1
-
-
-
-"---LookupFile---
-let g:LookupFile_TagExpr = string('./lktags')
-"(echo '!_TAG_FILE_SORTED	2	/2=foldcase/';(find . -type f -printf "%f\t%p\t1\n" | sort -f)) > ./lktags
-let LookupFile_PreserveLastPattern = 0
-
-
-
-"---unite---
-nmap <F4> :Unite -start-insert file_rec<CR>
-call unite#filters#matcher_default#use(['matcher_regexp'])
-
-"---tab----
-function! MyTabLabel(n)
-  let buflist = tabpagebuflist(a:n)
-  let winnr = tabpagewinnr(a:n)
-  return fnamemodify(bufname(buflist[winnr - 1]), ":t")
-endfunction
-function! MyTabLine()
-  let s = ''
-  for i in range(tabpagenr('$'))
-    " select the highlighting
-    if i + 1 == tabpagenr()
-      let s .= '%#TabLineSel#'
-    else
-      let s .= '%#TabLine#'
-    endif
-
-    " set the tab page number (for mouse clicks)
-    let s .= '%' . (i + 1) . 'T'
-
-    " the label is made by MyTabLabel()
-    let s .= ' %{MyTabLabel(' . (i + 1) . ')} '
-  endfor
-
-  " after the last tab fill with TabLineFill and reset tab page nr
-  let s .= '%#TabLineFill#%T'
-
-  " right-align the label to close the current tab page
-  if tabpagenr('$') > 1
-    let s .= '%=%#TabLine#%999Xclose'
-  endif
-
-  return s
-endfunction
 " make tabline in terminal mode
 function! Vim_NeatTabLine()
     let s = ''
@@ -224,17 +128,145 @@ function! Vim_NeatGuiTabLabel()
     return Vim_NeatBuffer(l:bufnr, 0)
 endfunc
 
-set showtabline=2
-set tabpagemax=20
-set tabline=%!MyTabLine()
-nmap <tab> :tabnext<CR>
-nmap <S-tab> :tabprevious<CR>
-nmap tn :tabnew <C-R>=expand('%:h')<CR><CR>
-nmap tc :tabnew <C-R>=expand('%:p')<CR><CR>
+" setup new tabline, just like %M%t in macvim
+set tabline=%!Vim_NeatTabLine()
+set guitablabel=%{Vim_NeatGuiTabLabel()}
+
+"---ctags---
+"ctags -R --c++-kinds=+p --fields=+iaS --extra=+q
+
+
+
+"-- Taglist setting --
+let Tlist_Ctags_cmd='ctags'
+let Tlist_Use_Right_Window=1
+let Tlist_Show_One_File=1
+let Tlist_Process_File_Always=1
+let Tlist_Exit_OnlyWindow=1
+let Tlist_Auto_Open = 0
+"nmap tl :Tlist<CR>
+
+
+
+"-- winmanager --
+let g:winManagerWindowLayout='FileExplorer'
+let g:persistentBehaviour=1
+"let g:AutoOpenWinManager=1
+nmap wm :WMToggle<cr>
+
+
+
+"-- omnicppcomplete --
+set nocp
+filetype plugin on
+
+
+
+"-- cscope --
+if has("cscope")
+	set csprg=/usr/bin/cscope
+	set csto=0
+	set cst
+	set nocsverb
+	set csre
+	set cscopequickfix=g-,s-,c-,d-,i-,t-,e-
+	" add any database in current directory
+	if filereadable("cscope.out")
+		cs add cscope.out
+	" else add database pointed to by environment
+	elseif $CSCOPE_DB != ""
+		cs add $CSCOPE_DB
+	endif
+	"set csverb
+endif
+"find apollo/scm/phx/components/ -regex ".*\.\(h\|c\|cpp\|htm\|html\|js\|css\)$" > cscope.files
+"cscope -Rbkq
+" 0 or s: Find this C symbol
+" 1 or g: Find this definition
+" 2 or d: Find functions called by this function
+" 3 or c: Find functions calling this function
+" 4 or t: Find this text string
+" 5 or e: Find this egrep pattern
+" 6 or f: Find this file
+" 7 or i: Find files #including this file
+nmap fs :lcs find s <C-R>=expand("<cword>")<CR><CR><C-o>:lw<CR>
+nmap fg :lcs find g <C-R>=expand("<cword>")<CR><CR><C-o>:lw<CR>
+nmap fd :lcs find d <C-R>=expand("<cword>")<CR><CR><C-o>:lw<CR>
+nmap fc :lcs find c <C-R>=expand("<cword>")<CR><CR><C-o>:lw<CR>
+nmap ft :lcs find t <C-R>=expand("<cword>")<CR><CR><C-o>:lw<CR>
+nmap fe :lcs find e <C-R>=expand("<cword>")<CR><CR><C-o>:lw<CR>
+nmap ff :lcs find f <C-R>=expand("<cfile>")<CR><CR><C-o>:lw<CR>
+nmap fi :lcs find i ^<C-R>=expand("<cfile>")<CR>$<CR><C-o>:lw<CR>
+
+"---------vimgrep----------
+set grepprg=egrep
+nmap fw :lgr -nr --include="*.cpp" --include="*.c" --include="*.h" --exclude-dir="gen" <C-R>=expand("<cword>")<CR><CR><C-o>:lw<CR>
+nmap fa :lgr -nr --include="*.cpp" --include="*.c" --include="*.h" --include="*.js" --include="*.htm" --include="*.html" --include="*.xml" --include="*.css" --exclude-dir="gen" <C-R>=expand("<cword>")<CR><CR><C-o>:lw<CR>
+nmap fA :lgr -nr --exclude-dir="gen" <C-R>=expand("<cword>")<CR><CR><C-o>:lw<CR>
+nmap ,w :lgr -nr --include="*.cpp" --include="*.c" --include="*.h" --exclude-dir="gen" <C-R>=expand("<cword>")<CR>
+nmap ,s :%s/<C-R>=expand("<cword>")<CR>/
+nmap ,S :%s/\<<C-R>=expand("<cword>")<CR>\>/
+nmap ,a :lgr -nr --include="*.cpp" --include="*.c" --include="*.h" --include="*.js" --include="*.htm" --include="*.html" --include="*.css" --exclude-dir="gen" <C-R>=expand("<cword>")<CR>
+nmap ,A :lgr -nr --exclude-dir="gen" <C-R>=expand("<cword>")<CR>
+
+
+"-- lookupfile --
+"(echo "!_TAG_FILE_SORTED	2	/2=foldcase/";(find . -type f -printf "%f\t%p\t1\n" | sort -f)) > ./lktags
+"if filereadable("./lktags")
+"	let g:LookupFile_TagExpr = string('./lktags')
+"endif
+"let g:LookupFile_UsingSpecializedTags = 0
+"let g:LookupFile_FileFilter = '\.class$\|\.o$\|\.obj$\|\.exe$\|\.jar$\|\.zip$\|\.war$\|\.ear$\|\.dbo$\|\.cmd$\|\.dep$\|\.sib$\|\.debug$'
+"let g:LookupFile_PreservePatternHistory = 1
+"let g:LookupFile_MinPatLength = 2
+"let g:LookupFile_PreserveLastPattern =0
+
+
+"---Tagbar---
+nmap tb :TagbarToggle<CR>
+nmap tj :TagbarOpen fj<CR>
+let g:tagbar_autofocus=0
+let g:tagbar_show_visibility = 1
+let g:tagbar_show_linenumbers = 1
+let g:tagbar_autoshowtag = 1
+let g:tagbar_autopreview = 0
+let g:tagbar_left = 1
+
+
+"---CtrlP---
+let g:ctrlp_regexp = 1
+
+"---unite---
+"nmap <F4> :Unite -start-insert file_rec<CR>
+"call unite#filters#matcher_default#use(['matcher_regexp'])
+
+"---Airline---
+set laststatus=2
+
+"---Tabline---
+nmap tn :tabedit <C-R>=expand("%:p:h")<CR><CR>
 nmap tw :tabclose<CR>
+nmap tc :tabedit <C-R>=expand("%")<CR><CR>
+nmap <F2> :NERDTree<CR>
+nmap <Tab> :tabnext<CR>
+nmap <S-Tab> :tabprevious<CR>
+
+"---NERDTree---
+let g:NERDTreeDirArrows = 1
+let g:NERDTreeDirArrowExpandable = '▸'
+let g:NERDTreeDirArrowCollapsible = '▾'
+let NERDTreeShowHidden=1
+let NERDTreeShowLineNumbers=1
+let NERDTreeAutoCenter=1
+let g:nerdtree_tabs_open_on_console_startup=1
+let NERDTreeWinPos="right"
+let NERDTreeMouseMode=1
+
+"nmap Abortedtt :NERDTreeToggle <C-R>=expand("%:p:h")<CR><CR>
+nmap tt :NERDTreeToggle <C-R>=expand("%")<CR><CR>
 
 
-"---comment---
+"---Comment---
 function! ToggleCommentN()
 	let l:str = getline(".")
 	let l:pos = getpos(".")[1:2]
@@ -257,6 +289,26 @@ function! ToggleCommentN()
 	endif
 	call cursor(l:pos)
 endf
+"function! ToggleCommentV()
+"	let l:start = line("'<")
+"	let l:end = line("'>")
+"	let l:index = l:start
+"	let l:pos = getpos(".")[1:2]
+"    let l:i = 0
+"	while l:index <= l:end
+"		call cursor(index, pos[1])
+"	    let l:str = getline(index)
+"		exec "normal ^"
+"		let l:i = getpos(".")[2] - 1
+"        if str[l:i] == "/" && str[l:i+1] == "/"
+"		    exec "normal ^xx"
+"        else
+"		    exec "normal 0i//"
+"        endif
+"		let l:index += 1
+"	endwhile
+"	call cursor(l:pos)
+"endf
 function! ToggleCommentV2()
 	let l:index  = line("'<")
 	let l:end = line("'>")
@@ -290,17 +342,5 @@ endf
 nmap \\ :call g:ToggleCommentN()<CR>
 vmap \\ :<CR>:call g:ToggleCommentV2()<CR>
 
-"---NERDTree---
-let g:NERDTreeDirArrows = 1
-let g:NERDTreeDirArrowExpandable = '▸'
-let g:NERDTreeDirArrowCollapsible = '▾'
-let NERDTreeShowHidden=1
-let NERDTreeShowLineNumbers=1
-let NERDTreeAutoCenter=1
-let g:nerdtree_tabs_open_on_console_startup=1
-let NERDTreeWinPos="right"
-let NERDTreeMouseMode=1
 
-"nmap Abortedtt :NERDTreeToggle <C-R>=expand("%:p:h")<CR><CR>
-nmap tt :NERDTreeToggle <C-R>=expand("%")<CR><CR>
 
