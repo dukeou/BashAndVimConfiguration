@@ -16,7 +16,7 @@ set -a
 #*                            PATH Settings
 #*
 #**************************************************************************************
-export PATH=~/bin:$PATH
+export PATH=''
 export LD_LIBRARY_PATH=./
 #**************************************************************************************
 #*
@@ -29,8 +29,8 @@ TZ='Asia/Shanghai'; export TZ
 #*                            Proxy Settings
 #*
 #**************************************************************************************
-#export http_proxy=http://web-proxy.boi.hp.com:8080
-#export https_proxy=http://web-proxy.boi.hp.com:8080
+# export http_proxy=
+# export https_proxy=
 #**************************************************************************************
 #*
 #*                            PS1 Settings
@@ -88,6 +88,8 @@ function cgrep { grep -Einr --exclude-dir=gen "$@"; }
 function myip { ifconfig $(cat /etc/network/interfaces|sed -n "/auto/{s/^\s*auto\s*\(\S*\)\s*$/\1/p}"|sed -n "/lo/d; p") | sed -n "/inet addr/{s/^\s*inet addr\s*:\s*\(\S*\)\s*.*$/\1/p}" "$@"; }
 function nsip { nslookup $(hostname) | sed -n "/Address[^#]*$/{s/^.*:\s*\(.*\)\s*$/\1/p}" "$@"; }
 function randomname { echo $(date +%Y_%m_%d_%H_%M_%S)_$(($RANDOM%1000)); }
+function randomname2 { echo $(date +%Y%m%d%H%M%S)_$(($RANDOM%1000)); }
+function dt { date '+%y/%m/%d %H:%M:%S'; }
 ALL_IPS=$(myip)
 ALL_IPS=${ALL_IPS%.*}.{1..255}
 declare -A color_table=(
@@ -101,6 +103,53 @@ function _ip_comp
 {
     COMPREPLY=()
     [ $COMP_CWORD -eq 1 ] && COMPREPLY=($(compgen -W $ALL_IPS "$2"))
+}
+function _table_draw
+{
+    # cmd <col> <data...>
+    local -i _col=$1; shift
+    local -i _ind _len _i=0 _j=0 _k=0
+    local _w=() _tb_start _tb_mid _tb_end _tb_template
+    for _d
+    do
+        _ind=$((_i%_col))
+        _i=$_i+1
+        _len=$(strlen_sh "$_d")+4
+        [ -z "${_w[$_ind]}" ] && _w[$_ind]=$_len && continue
+        [ $_len -gt ${_w[$_ind]} ] && _w[$_ind]=$_len
+    done
+    _line='x'
+    _tb_template='│'
+    for (( _i=0; _i<$_col; ++_i )) # Columns
+    do
+        _len=${_w[$_i]}
+        for (( _j=0; _j<$_len; ++_j ));
+        do
+            _line+='─';
+        done # width for each column
+        _tb_template+="%-${_len}s│"
+        [ $_i -lt $((_col-1)) ] && _line+='y'
+    done
+    _line+='z'
+    _tb_start=$_line;
+    _tb_start=${_tb_start//x/┌}
+    _tb_start=${_tb_start//y/┬}
+    _tb_start=${_tb_start//z/┐}
+    _tb_mid=$_line
+    _tb_mid=${_tb_mid//x/├}
+    _tb_mid=${_tb_mid//y/┼}
+    _tb_mid=${_tb_mid//z/┤}
+    _tb_end=$_line
+    _tb_end=${_tb_end//x/└}
+    _tb_end=${_tb_end//y/┴}
+    _tb_end=${_tb_end//z/┘}
+    echo "$_tb_start"
+    for(( _i=1; _i<$#; _i+=$_col))
+    do
+        printf "$_tb_template\n" ${@: $_i:$_col}
+        [ $_i -lt $(($#-$_col)) ] && echo "$_tb_mid"
+    done
+    echo "$_tb_end"
 }
 function color_echo_sh
 {
@@ -169,10 +218,10 @@ function input_sth_sh
     [ -z "$_variable" ] && return 0
     [ -z "$_prompt" ] && _prompt='Please input: '
     [ "$_variable" != "_input" ] && local _input=''
-    read -e -p "`prompt_sh "$_prompt"`" _input
+    ! read -e -p "`prompt_sh "$_prompt"`" _input && return 1
     until [ -z "$_non_empty" -o -n "$_input" ];
     do
-        read -e -p "`prompt_sh "$_prompt"`" _input
+        ! read -e -p "`prompt_sh "$_prompt"`" _input && return 1
     done
     [ -z "$_variable" ] && echo "$_input" && return 0;
     local -n _ref="$_variable"
@@ -547,16 +596,20 @@ Content-Type: %s\r\n\
             input_sth_sh -p "Password: " -v _passwd
         elif [ "${_http_header[Response-Code]}" == 403 ]; then
             if [ "$LEDM_SH_DEBUG" == "ON" ]; then
+                echo curl -v -X "$_method" -d "$_payload" -k -H "$_auth" -w "%{http_code}\n" "https://$_ip$_url"
                 curl -v -X "$_method" -d "$_payload" -k -H "$_auth" -w "%{http_code}\n" "https://$_ip$_url"
             else
+                echo curl -X "$_method" -d "$_payload" -k -H "$_auth" -w "%{http_code}\n" "https://$_ip$_url"
                 curl -X "$_method" -d "$_payload" -k -H "$_auth" -w "%{http_code}\n" "https://$_ip$_url"
             fi
             break;
         elif [ "${_http_header[Response-Code]}" == 301 ]; then
             if [[ "${_http_header[Location]}" =~ https:// ]]; then
                 if [ "$LEDM_SH_DEBUG" == "ON" ]; then
+                    echo curl -v -X "$_method" -d "$_payload" -k -H "$_auth" -w "%{http_code}\n" "${_http_header[Location]}"
                     curl -v -X "$_method" -d "$_payload" -k -H "$_auth" -w "%{http_code}\n" "${_http_header[Location]}"
                 else
+                    echo curl -X "$_method" -d "$_payload" -k -H "$_auth" -w "%{http_code}\n" "${_http_header[Location]}"
                     curl -X "$_method" -d "$_payload" -k -H "$_auth" -w "%{http_code}\n" "${_http_header[Location]}"
                 fi
                 break;
@@ -612,7 +665,8 @@ function gitswhat
             _line=$(gittop)/${_array[@]: -1}
             printf "%s  " "${_array[*]: 0:5}"
             _line=$(realpath "$_line")
-            echo ${_line##$(pwd)}
+            #echo ${_line##$(pwd)}
+            relatedpath "$_line"
         done
     }
 }
@@ -629,12 +683,13 @@ function _get_cur_branch
     _ref=$_br
     return 0
 }
-function gitchanged
+function _gitchanged
 {
     local _list=''
-    if [ $# -eq 0 ]; then
-        _list=$(git status -s | awk '{print $2}')
+    if [ $# -le 1 ]; then
+        _list=$(git status -s | awk '{if($0 ~ /^'"$1"'\s*/) print $2;}')
     else
+        shift;
         _list=$(git diff --name-only $@ | sed '{s/^/realpath `git rev-parse --show-toplevel`\//;e
             s/^/top=/;
             s/$/;echo ${top##`pwd`\/}/;
@@ -651,6 +706,10 @@ function gitchanged
         fi
     fi
 }
+function gitchanged { _gitchanged '.[MD?]' $@; }
+function gituntracked { _gitchanged '\?\?' $@; }
+function gitmodifiedandnew { _gitchanged '.[MD?]' $@; }
+function gitstaged { _gitchanged '[MAD]' $@; }
 function gitdiff
 {
     local _newlist=''
@@ -674,7 +733,7 @@ function vigitchanged
     local l=''
     for l in $_list
     do
-        [ ! -f "$l" ] && continue
+        [ ! -f "$l" ] && [ ! -d "$l" ] && continue
         _newlist+=$l" "
     done
     [ -n "$_newlist" ] && vi $_newlist
@@ -685,7 +744,7 @@ function gitcheckout
 }
 function gitadd
 {
-   git add $(gitchanged); git status
+   git add $(gitmodifiedandnew); git status
 }
 #**************************************************************************************
 #*
@@ -743,31 +802,80 @@ function repoabandon
 }
 #**************************************************************************************
 #*
+#*                            Telnet Debug Command
+#*
+#**************************************************************************************
+function tdbg
+{
+    local _ip=$1 _cmd='' _fd=0 _line='' _response='' _sysname=''
+    ! is_ip_sh "$_ip" && error_sh "Not an IP <$_ip>" && return 1
+    _sysname=$(tdbgexec_sh "$_ip" 'systemApp/GetSystemName' 2>/dev/null)
+    if ! exec {_fd}<>/dev/tcp/$_ip/2300; then
+        ledm_telnet on "$_ip" >/dev/null
+        ! exec {_fd}<>/dev/tcp/$_ip/2300 && error_sh "Fail to connect $_ip:2300!" && return 1
+    fi
+    ! read -u $_fd -d '>' _line && exit 
+    printf "%s" "$_line" | sed '/telnet_debug/d'
+    while input_sth_sh -p "$_ip/$_sysname telnet_debug>"  -v _cmd -n
+    do
+        echo "$_cmd" >&$_fd
+        while true
+        do
+            ! read -u $_fd -t 5 -d '>' _line && break 2
+            _response+=$_line
+            [[ "$_response" =~ .*telnet_debug.* ]] && break
+        done
+        echo "$_response" | sed '${/telnet_debug/d}'
+        _response=''
+    done
+    echo ''
+    exec {_fd}>&-
+    exec {_fd}<&-
+    return 0
+}
+function tdbgexec_sh
+{
+    local _ip=$1; shift
+    local _cmd_str=$* _cmd='' _fd=0 _line='' _response=''
+    local -a _cmd_list=()
+    ! is_ip_sh "$_ip" && error_sh "Not an IP <$_ip>" && return 1
+    _cmd_str=${_cmd_str##*( )}
+    _cmd_str=${_cmd_str%%*( )}
+    [ -z "$_cmd_str" ] && return 0
+    if ! exec {_fd}<>/dev/tcp/$_ip/2300; then
+        ledm_telnet on "$_ip" >/dev/null
+        ! exec {_fd}<>/dev/tcp/$_ip/2300 && error_sh "Fail to connect $_ip:2300!" && return 1
+    fi
+    ! read -u $_fd -t 5 -d '>' _line && return 1
+    while [ -n "$_cmd_str" ]
+    do
+        _cmd=${_cmd_str%%,*}
+        _cmd_str=${_cmd_str#$_cmd}
+        _cmd=${_cmd##*( )}
+        _cmd=${_cmd%%*( )}
+        _cmd_str=${_cmd_str##*(,)}
+        _cmd_str=${_cmd_str##*( )}
+        _cmd_str=${_cmd_str%%*( )}
+        [ -z "$_cmd" ] && continue
+        echo "$_cmd" >&$_fd
+        while true
+        do
+            ! read -u $_fd -d '>' _line && break 2
+            _response+=$_line
+            [[ "$_response" =~ .*telnet_debug.* ]] && break
+        done
+        echo "$_response" | sed '${/telnet_debug/d}'
+        _response=''
+    done
+    exec {_fd}>&-
+    exec {_fd}<&-
+    return 0
+}
+#**************************************************************************************
+#*
 #*                            Trace Command
 #*
 #**************************************************************************************
-function _trace_ctrl { httpclient_sh -m get -t 'text/plain' -k -h "$1" -u "/cgi-bin/handleReq/$2?_=1"; }
-function trace_start { [ $# -eq 0 ] && echo "$FUNCNAME <IP>" && return 0; _trace_ctrl "$1" "start"; }
-function trace_stop { [ $# -eq 0 ] && echo "$FUNCNAME <IP>" && return 0; _trace_ctrl "$1" "stop"; }
-function trace_flush { [ $# -eq 0 ] && echo "$FUNCNAME <IP>" && return 0; _trace_ctrl "$1" "flush"; }
-function _trace_cfg
-{
-    httpclient_sh -m post -k -h "$1" -t 'application/json' -u \
-        "/cgi-bin/handleJson/setShrMemFull" \
-        -p \
-        "{
-            \"overwriteBufferWhenFull\":1,
-            \"dumpMemorySnoops\":0,
-            \"enableStreaming\":$2,
-            \"startTriggerSet\":0,
-            \"stopTriggerSet\":0,
-            \"triggerArmed\":0,
-            \"flushOnPwrup\":0,
-            \"dmaBufferSize\":$3
-        }"
-}
-function trace_open_stream { [ $# -eq 0 ] && echo "$FUNCNAME <IP>" && return 0; _trace_cfg "$1" 1 67043328; }
-function trace_close_stream { [ $# -eq 0 ] && echo "$FUNCNAME <IP>" && return 0; _trace_cfg "$1" 0 838041600; }
 function trace_decode
 {
     [ $# -eq 0 ] && echo "$FUNCNAME <debuglist> <IP>" && return 0;
@@ -873,7 +981,6 @@ function trace_decode
     done
     exec {_fd}<&-
 }
-function dart_sh { trace_open_stream "$2"; trace_decode "$1" "$2"; trace_close_stream "$2"; }
 #**************************************************************************************
 #*
 #*                            Convenient Command
@@ -925,11 +1032,45 @@ function loccount
 {
     awk 'BEGIN{FS=","}{if($1~/^c[A-Z]/){for(i=2;i<NF;i++){printf $i} print ""}}' $1 | sed 's/^\s*"//;s/"\s*$//' | wc -w
 }
-#**************************************************************************************
-#*
-#*                            Python Settings
-#*
-#**************************************************************************************
-#export PYTHONPATH=$PYTHONPATH
-
+function relatedpath
+{
+    local _path=$(realpath $1) _rel_path='' _pwd_path=(${PWD//\// })
+    local _array_path=(${_path//\// })
+    local -i _c=0;
+    while [ "${_array_path[$_c]}" == "${_pwd_path[$_c]}" ];
+    do
+        _c=$_c+1
+    done
+    if [ -z "${_pwd_path[$_c]}" ]; then
+        _rel_path+=./$(echo ${_array_path[@]: $_c} | sed 's/ /\//g;')
+    else
+        _pwd_path=(${_pwd_path[@]: $_c})
+        _rel_path+=$(echo ${_pwd_path[@]/*/..} | sed 's/ /\//g;')/
+        _rel_path+=$(echo ${_array_path[@]: $_c} | sed 's/ /\//g;')
+    fi
+    echo $_rel_path
+}
+function loop
+{
+    local _time=$1; shift;
+    local _cmd=$@
+    while true
+    do
+        sleep $_time
+        echo $(dt) $(eval $@)
+    done
+}
+function loop_times
+{
+    local _time=$1; shift;
+    local -i _count=$1; shift;
+    local _cmd=$@
+    while [ $_count -gt 0 ]
+    do
+        sleep $_time
+        eval $@
+        _count=$_count-1
+    done
+}
+complete -acb loop loop_times
 set +a
