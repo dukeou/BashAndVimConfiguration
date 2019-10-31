@@ -361,6 +361,77 @@ function is_ip_sh
     [[ "$1" =~ ^[0-9]{1,3}(.[0-9]{1,3}){3} ]] && return 0
     return 1
 }
+function xmlfmt_awk
+{
+#    awk "
+#        function trim(str)
+#        {
+#            gsub(/\r/, "", str);
+#            gsub(/^[ \t]+/, "", str);
+#            gsub(/[ \t]+$/, "", str);
+#            gsub(/[ \t]+/, " ", str);
+#            return str;
+#        }
+#        function space(num)
+#        {
+#            for(i = 0; i < num * 4; i++)
+#            {
+#                printf " ";
+#            }
+#        }
+#        BEGIN {
+#            pattern = "</?[\\.\\:a-zA-Z0-9_-]+( +[\\:a-zA-Z_][\\.\\:a-zA-Z0-9_-]*=(('[^']+')|(\"[^\"]+\")))* */?>";
+#            indent = 0;
+#            tags = 0;
+#        }
+#        {
+#            str = $0;
+#            while(match(str, pattern))
+#            {
+#                text = trim(substr(str, 0, RSTART - 1));
+#                if(substr(str, RSTART + 1, 1) == "/")
+#                {
+#                    --indent;
+#                    if(length(text) > 0)
+#                    {
+#                        printf "%s%s", text, substr(str, RSTART, RLENGTH);
+#                    }
+#                    else
+#                    {
+#                        printf "\n";
+#                        space(indent);
+#                        printf "%s", substr(str, RSTART, RLENGTH);
+#                    }
+#                }
+#                else
+#                {
+#                    ++tags;
+#                    if(tags > 1)
+#                    {
+#                        printf "\n";
+#                    }
+#                    if(length(text) > 0)
+#                    {
+#                        space(indent);
+#                        printf "%s\n", text;
+#                    }
+#                    space(indent);
+#                    printf "%s", substr(str, RSTART, RLENGTH);
+#                    if(substr(str, RSTART + RLENGTH - 2, 1) != "/")
+#                    {
+#                        ++indent;
+#                    }
+#                }
+#                str=substr(str, RSTART + RLENGTH);
+#            }
+#            str = trim(str);
+#            if(length(str) > 0)
+#                printf("%s\n", str);
+#        }
+#        END{
+#            printf "\n";
+#        }'
+}
 function xmlfmt_sh
 { 
     sed -n '{
